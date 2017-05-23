@@ -83,7 +83,6 @@ ActiveRecord::Schema.define(version: 20170523092734) do
   create_table "odds", force: :cascade do |t|
     t.float "value", null: false
     t.integer "market_type", null: false
-    t.integer "race_id", null: false
     t.integer "runner_id", null: false
     t.integer "race_day_id", null: false
     t.boolean "won", null: false
@@ -94,7 +93,6 @@ ActiveRecord::Schema.define(version: 20170523092734) do
     t.index ["created_at"], name: "index_odds_on_created_at"
     t.index ["market_type"], name: "index_odds_on_market_type"
     t.index ["race_day_id"], name: "index_odds_on_race_day_id"
-    t.index ["race_id"], name: "index_odds_on_race_id"
     t.index ["race_start_at"], name: "index_odds_on_race_start_at"
     t.index ["runner_id"], name: "index_odds_on_runner_id"
   end

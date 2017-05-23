@@ -4,6 +4,8 @@ class Simulation < ActiveRecord::Base
 
   attr_accessor :selections
 
+  after_create :simulate!
+
   def simulate!
     @selections = []
 
