@@ -87,8 +87,10 @@ ActiveRecord::Schema.define(version: 20170523092734) do
     t.integer "runner_id", null: false
     t.integer "race_day_id", null: false
     t.boolean "won", null: false
+    t.string "country", null: false
     t.datetime "race_start_at", null: false
     t.datetime "created_at", null: false
+    t.index ["country"], name: "index_odds_on_country"
     t.index ["created_at"], name: "index_odds_on_created_at"
     t.index ["market_type"], name: "index_odds_on_market_type"
     t.index ["race_day_id"], name: "index_odds_on_race_day_id"
