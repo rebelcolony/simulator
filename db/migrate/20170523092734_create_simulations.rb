@@ -9,6 +9,7 @@ class CreateSimulations < ActiveRecord::Migration[5.1]
       t.string   "country",       null: false
       t.string   "rule",          null: false
       t.datetime "created_at",    null: false
+      t.text     "selections"
 
       t.integer  "total"
       t.integer  "winners"

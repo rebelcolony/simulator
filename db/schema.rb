@@ -201,6 +201,7 @@ ActiveRecord::Schema.define(version: 20170524035501) do
     t.string "country", null: false
     t.string "rule", null: false
     t.datetime "created_at", null: false
+    t.text "selections"
     t.integer "total"
     t.integer "winners"
     t.float "best_price"

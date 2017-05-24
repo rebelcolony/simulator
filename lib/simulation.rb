@@ -1,16 +1,13 @@
 class Simulation < ActiveRecord::Base
-
   belongs_to :race_day
 
   validates_uniqueness_of :race_day_id, scope: [:interval, :range_min, :range_max, :market_type, :country, :rule]
 
-  attr_accessor :selections
+  serialize :selections, Array
 
   after_create :simulate!
 
   def simulate!
-    @selections = []
-
     candidates =  Simulation.connection.select_values("SELECT DISTINCT ON (runner_id) runner_id
      FROM odds
      WHERE race_day_id = #{race_day_id}
@@ -48,14 +45,14 @@ class Simulation < ActiveRecord::Base
       sel[:return] = (sel[:won] ? (sel[:best_price] - 1) : -1.0).round(2)
       sel[:profit] = sel[:won] ? sel[:return] * 0.96 : sel[:return]
 
-      @selections << sel
+      selections << sel
     end
 
-    self.total      = @selections.count
-    self.winners    = @selections.select { |a| a[:won] }.count
-    self.best_price = @selections.collect{ |a| a[:best_price] }.sum.round(2)
-    self.return     = @selections.collect{ |a| a[:return].to_f }.sum.round(2)
-    self.profit     = @selections.collect{ |a| a[:profit].to_f }.sum.round(2)
+    self.total      = selections.count
+    self.winners    = selections.select { |a| a[:won] }.count
+    self.best_price = selections.collect{ |a| a[:best_price] }.sum.round(2)
+    self.return     = selections.collect{ |a| a[:return].to_f }.sum.round(2)
+    self.profit     = selections.collect{ |a| a[:profit].to_f }.sum.round(2)
 
     self.hit_rate = (self.winners.to_f / self.total * 100).round(2)
     self.hit_rate = 0 if self.hit_rate.nan?
