@@ -10,6 +10,8 @@ country: 'gb',
 rule: 'lay'
 ).first_or_create
 
+a = HyperSimulation.create(country: 'gb', up_to: Date.new(2016, 6, 13))
+
 def ti(val = '#')
   puts val*50
   puts "######## ELAPSED: #{((Time.now - $start) * 1000).round(5)}ms"

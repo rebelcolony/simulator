@@ -34,8 +34,8 @@ class Simulation < ActiveRecord::Base
       res
     end.each do |runner_id, values|
       b, l, p = values[1].try(:first), values[2].try(:first), values[3].try(:first)
-
       next unless b and l
+      next unless (range_min..range_max).include?(b)
       next if rule == 'lay' and l > b
 
       sel = {

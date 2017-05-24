@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170523092734) do
+ActiveRecord::Schema.define(version: 20170524035501) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -29,6 +29,32 @@ ActiveRecord::Schema.define(version: 20170523092734) do
     t.string "url", null: false
     t.integer "easy_odds_ref"
     t.string "odds_checker_ref", limit: 2
+  end
+
+  create_table "date_simulations", force: :cascade do |t|
+    t.date "since", null: false
+    t.date "up_to", null: false
+    t.float "interval", null: false
+    t.float "range_min", null: false
+    t.float "range_max", null: false
+    t.integer "market_type", null: false
+    t.string "country", null: false
+    t.string "rule", null: false
+    t.datetime "created_at", null: false
+    t.integer "total"
+    t.integer "winners"
+    t.float "best_price"
+    t.float "return"
+    t.float "profit"
+    t.float "hit_rate"
+    t.index ["country"], name: "index_date_simulations_on_country"
+    t.index ["interval"], name: "index_date_simulations_on_interval"
+    t.index ["market_type"], name: "index_date_simulations_on_market_type"
+    t.index ["range_max"], name: "index_date_simulations_on_range_max"
+    t.index ["range_min"], name: "index_date_simulations_on_range_min"
+    t.index ["rule"], name: "index_date_simulations_on_rule"
+    t.index ["since"], name: "index_date_simulations_on_since"
+    t.index ["up_to"], name: "index_date_simulations_on_up_to"
   end
 
   create_table "delayed_jobs", id: :serial, force: :cascade do |t|
@@ -51,6 +77,22 @@ ActiveRecord::Schema.define(version: 20170523092734) do
     t.text "formula"
     t.datetime "created_at"
     t.datetime "updated_at"
+  end
+
+  create_table "hyper_simulations", force: :cascade do |t|
+    t.string "country", null: false
+    t.date "since", default: "2016-06-12", null: false
+    t.date "up_to", default: -> { "now()" }, null: false
+    t.integer "range_min", default: 1, null: false
+    t.integer "range_max", default: 20, null: false
+    t.float "range_step", default: 1.0, null: false
+    t.float "interval_min", default: -0.3, null: false
+    t.float "interval_max", default: 4.5, null: false
+    t.integer "market_type", default: 1, null: false
+    t.string "rule", default: "lay", null: false
+    t.string "metrics", default: ["points", "hit_rate", "daily_strike_rate"], null: false, array: true
+    t.datetime "created_at", null: false
+    t.text "results"
   end
 
   create_table "markets", id: :serial, force: :cascade do |t|
