@@ -2,6 +2,8 @@ class Simulation < ActiveRecord::Base
 
   belongs_to :race_day
 
+  validates_uniqueness_of :race_day_id, scope: [:interval, :range_min, :range_max, :market_type, :country, :rule]
+
   attr_accessor :selections
 
   after_create :simulate!
@@ -31,7 +33,7 @@ class Simulation < ActiveRecord::Base
       res[row['runner_id']][row['market_type']] = [row['value'], row['won']]
       res
     end.each do |runner_id, values|
-      b, l, p = values[1].first, values[2].first, values[3].first
+      b, l, p = values[1].try(:first), values[2].try(:first), values[3].try(:first)
 
       next unless b and l
       next if rule == 'lay' and l > b
