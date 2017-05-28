@@ -6,7 +6,7 @@ class CreateOdds < ActiveRecord::Migration[5.1]
       t.integer  "runner_id",     null: false
       t.integer  "race_day_id",   null: false
       t.boolean  "won",           null: false
-      t.string   "country",       null: false
+      t.integer  "country",       null: false
       t.datetime "race_start_at", null: false
       t.datetime "created_at",    null: false
     end

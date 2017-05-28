@@ -6,11 +6,11 @@ interval: 0.55,
 range_min: 1.7,
 range_max: 3.3,
 market_type: 3,
-country: 'gb',
+country: 3,
 rule: 'lay'
 ).first_or_create
 
-a = HyperSimulation.create(country: 'gb', up_to: Date.new(2016, 6, 13), market_type: 1)
+a = HyperSimulation.create(country: 3, up_to: Date.new(2016, 6, 12), market_type: 1, range_step: 0.2)
 
 def ti(val = '#')
   puts val*50

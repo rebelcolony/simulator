@@ -6,7 +6,7 @@ class CreateSimulations < ActiveRecord::Migration[5.1]
       t.float    "range_min",     null: false
       t.float    "range_max",     null: false
       t.integer  "market_type",   null: false
-      t.string   "country",       null: false
+      t.integer  "country",       null: false
       t.string   "rule",          null: false
       t.datetime "created_at",    null: false
       t.text     "selections"

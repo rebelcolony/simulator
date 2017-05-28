@@ -1,0 +1,7 @@
+2 days (0 loaded) => 13m14
+2 days (2 loaded) => 0m32
+3 days (2 loaded) => 8m
+3 days (3 loaded) => 1m22
+4 days (3 loaded) => 14m18
+4 days (4 loaded) => 1m14
+5 days (4 loaded) => 13m14

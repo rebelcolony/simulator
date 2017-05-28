@@ -10,7 +10,7 @@ class HyperSimulation < ActiveRecord::Base
 
     i = 0
 
-    ranges = if false#options['full'] == '1'
+    ranges = if true#options['full'] == '1'
       [
         [1, 6], [1, 7], [1, 8], [1, 9], [1, 10], [1, 11], [1, 12], [1, 14], [1, 16], [1, 18], [1, 20],
         [2, 6], [2, 7], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12], [2, 14], [2, 16], [2, 18], [2, 20],
@@ -75,7 +75,7 @@ class HyperSimulation < ActiveRecord::Base
 
     ranges.each do |min_range, max_range|
       steps_results = steps.map do |interval|
-        simulation = DateSimulation.where(
+        simulation = DateSimulation.new(
           since: since,
           up_to: up_to,
           interval: interval,
@@ -84,7 +84,7 @@ class HyperSimulation < ActiveRecord::Base
           rule: rule,
           country: country,
           market_type: market_type
-        ).first_or_create
+        ).simulate!
 
         out :hyper, "PROGRESS: #{(((i += 1) / (steps.size.to_f * ranges.size)) * 100).to_i}%"
         simulation

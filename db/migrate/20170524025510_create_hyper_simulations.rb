@@ -1,7 +1,7 @@
 class CreateHyperSimulations < ActiveRecord::Migration[5.1]
   def change
     create_table :hyper_simulations do |t|
-      t.string   "country",       null: false
+      t.integer  "country",       null: false
       t.date     "since",         null: false, default: Date.new(2016, 6, 12)
       t.date     "up_to",         null: false, default: -> { 'NOW()' }
       t.integer  "range_min",     null: false, default: 1

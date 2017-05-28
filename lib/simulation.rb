@@ -8,20 +8,10 @@ class Simulation < ActiveRecord::Base
   after_create :simulate!
 
   def simulate!
-    candidates =  Simulation.connection.select_values("SELECT DISTINCT ON (runner_id) runner_id
-     FROM odds
-     WHERE race_day_id = #{race_day_id}
-     AND value BETWEEN #{range_min} AND #{range_max}
-     AND country = '#{country}'
-     AND market_type = 1
-     AND created_at < (race_start_at - INTERVAL '#{interval} MINUTES')
-     ORDER BY runner_id, created_at DESC;")
-
     sql = "SELECT DISTINCT ON (runner_id, market_type) runner_id, value, won, market_type
      FROM odds
      WHERE race_day_id = #{race_day_id}
-     AND country = '#{country}'
-     AND runner_id IN (#{candidates.join(', ')})
+     AND country = #{country}
      AND created_at < (race_start_at - INTERVAL '#{interval} MINUTES')
      ORDER BY runner_id, market_type, created_at DESC;"
 

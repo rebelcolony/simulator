@@ -38,7 +38,7 @@ ActiveRecord::Schema.define(version: 20170524035501) do
     t.float "range_min", null: false
     t.float "range_max", null: false
     t.integer "market_type", null: false
-    t.string "country", null: false
+    t.integer "country", null: false
     t.string "rule", null: false
     t.datetime "created_at", null: false
     t.integer "total"
@@ -80,7 +80,7 @@ ActiveRecord::Schema.define(version: 20170524035501) do
   end
 
   create_table "hyper_simulations", force: :cascade do |t|
-    t.string "country", null: false
+    t.integer "country", null: false
     t.date "since", default: "2016-06-12", null: false
     t.date "up_to", default: -> { "now()" }, null: false
     t.integer "range_min", default: 1, null: false
@@ -100,18 +100,6 @@ ActiveRecord::Schema.define(version: 20170524035501) do
     t.integer "market_type_id", null: false
     t.integer "race_id", null: false
     t.integer "winners", default: [], array: true
-    t.index ["market_type_id"], name: "index_markets_on_market_type_id"
-    t.index ["race_id"], name: "index_markets_on_race_id"
-  end
-
-  create_table "new_odd_sets", id: :serial, force: :cascade do |t|
-    t.float "value", null: false
-    t.integer "market_id", null: false
-    t.integer "runner_id", null: false
-    t.datetime "created_at", null: false
-    t.index ["created_at"], name: "index_new_odd_sets_on_created_at"
-    t.index ["market_id"], name: "index_new_odds_on_market_id"
-    t.index ["runner_id"], name: "index_new_odds_on_runner_id"
   end
 
   create_table "odd_sets", id: :serial, force: :cascade do |t|
@@ -128,7 +116,7 @@ ActiveRecord::Schema.define(version: 20170524035501) do
     t.integer "runner_id", null: false
     t.integer "race_day_id", null: false
     t.boolean "won", null: false
-    t.string "country", null: false
+    t.integer "country", null: false
     t.datetime "race_start_at", null: false
     t.datetime "created_at", null: false
     t.index ["country"], name: "index_odds_on_country"
@@ -182,23 +170,13 @@ ActiveRecord::Schema.define(version: 20170524035501) do
     t.index ["won"], name: "index_selections_on_won"
   end
 
-  create_table "simulation_exports", id: :serial, force: :cascade do |t|
-    t.string "link"
-    t.text "options"
-    t.integer "progress", default: 0
-    t.integer "job_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.float "result"
-  end
-
   create_table "simulations", force: :cascade do |t|
     t.integer "race_day_id", null: false
     t.float "interval", null: false
     t.float "range_min", null: false
     t.float "range_max", null: false
     t.integer "market_type", null: false
-    t.string "country", null: false
+    t.integer "country", null: false
     t.string "rule", null: false
     t.datetime "created_at", null: false
     t.text "selections"
