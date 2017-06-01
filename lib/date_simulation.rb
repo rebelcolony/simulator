@@ -16,25 +16,31 @@ class DateSimulation
   def simulate!
     simulations = []
 
-    (@since..@up_to).each do |date|
-      simulations << Simulation.where(
-        race_day_id: RaceDay.race_day_hash[date.to_s],
-        interval: @interval,
-        range_min: @range_min,
-        range_max: @range_max,
-        rule: @rule,
-        country: @country,
-        market_type: @market_type
-      ).first_or_create
+    races = (@since..@up_to).inject([]) do |res, date|
+      race = RaceDay.find_by_id(RaceDay.race_day_hash[date.to_s])
+      next unless race
+      race.cache_simulations!
+      res << race.id
+      res
     end
 
-    selections = simulations.collect(&:selections).flatten
+    results = Simulation.connection.select_all("
+      SELECT SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit
+      FROM simulations
+      WHERE race_day_id IN (#{races.join(', ')})
+      AND interval = #{@interval}
+      AND range_min = #{@range_min}
+      AND range_max = #{@range_max}
+      AND rule = '#{@rule}'
+      AND country = #{@country}
+      AND market_type = #{@market_type}
+    ").first
 
-    @total      = selections.count
-    @winners    = selections.select { |a| a[:won] }.count
-    @best_price = selections.collect{ |a| a[:best_price] }.sum.round(2)
-    @return     = selections.collect{ |a| a[:return].to_f }.sum.round(2)
-    @profit     = selections.collect{ |a| a[:profit].to_f }.sum.round(2)
+    @total      = results['total']
+    @winners    = results['winners']
+    @best_price = results['best_price']
+    @return     = results['return']
+    @profit     = results['profit']
 
     @hit_rate = (@winners.to_f / @total * 100).round(2)
     @hit_rate = 0 if @hit_rate.nan?

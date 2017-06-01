@@ -9,4 +9,12 @@ class RaceDay < ActiveRecord::Base
       res
     end
   end
+
+  def cache_simulations!
+    return true if cached
+
+
+
+    update(cached: true)
+  end
 end

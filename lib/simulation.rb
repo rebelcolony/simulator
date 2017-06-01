@@ -3,11 +3,11 @@ class Simulation < ActiveRecord::Base
 
   validates_uniqueness_of :race_day_id, scope: [:interval, :range_min, :range_max, :market_type, :country, :rule]
 
-  serialize :selections, Array
-
   after_create :simulate!
 
   def simulate!
+    selections = []
+
     sql = "SELECT DISTINCT ON (runner_id, market_type) runner_id, value, won, market_type
      FROM odds
      WHERE race_day_id = #{race_day_id}

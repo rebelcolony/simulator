@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170524035501) do
+ActiveRecord::Schema.define(version: 20170601002716) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -129,6 +129,7 @@ ActiveRecord::Schema.define(version: 20170524035501) do
 
   create_table "race_days", id: :serial, force: :cascade do |t|
     t.date "date", null: false
+    t.boolean "cached", default: false
   end
 
   create_table "races", id: :serial, force: :cascade do |t|
@@ -193,6 +194,31 @@ ActiveRecord::Schema.define(version: 20170524035501) do
     t.index ["range_max"], name: "index_simulations_on_range_max"
     t.index ["range_min"], name: "index_simulations_on_range_min"
     t.index ["rule"], name: "index_simulations_on_rule"
+  end
+
+  create_table "simulections", force: :cascade do |t|
+    t.integer "race_day_id"
+    t.float "interval"
+    t.float "range_min"
+    t.float "range_max"
+    t.integer "market_type"
+    t.integer "country"
+    t.integer "runner_id"
+    t.string "rule"
+    t.datetime "created_at"
+    t.boolean "won"
+    t.float "best_price"
+    t.float "lay"
+    t.float "return"
+    t.float "profit"
+    t.index ["country"], name: "index_simulections_on_country"
+    t.index ["interval"], name: "index_simulections_on_interval"
+    t.index ["market_type"], name: "index_simulections_on_market_type"
+    t.index ["race_day_id"], name: "index_simulections_on_race_day_id"
+    t.index ["range_max"], name: "index_simulections_on_range_max"
+    t.index ["range_min"], name: "index_simulections_on_range_min"
+    t.index ["rule"], name: "index_simulections_on_rule"
+    t.index ["runner_id"], name: "index_simulections_on_runner_id"
   end
 
   create_table "subscriptions", id: :serial, force: :cascade do |t|
