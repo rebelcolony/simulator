@@ -24,19 +24,35 @@ class RaceDay < ActiveRecord::Base
     rules.each do |rule|
       market_types.each do |market_type|
         countries.each do |country|
-          intervals.each do |interval|
-            out :simulations, "PROGRESS: #{(((i += 1) / total_passes) * 100).to_f.round(2)}%"
+          out :simulations, "PROGRESS: #{((i / total_passes.to_f) * 100).round}%"
 
-            HyperSimulation::FULL_RANGES.each do |min_range, max_range|
-              Simulation.create(
+          intervals.each do |interval|
+            i += 1
+
+            sql = "SELECT DISTINCT ON (runner_id, market_type) runner_id, value, won, market_type
+             FROM odds
+             WHERE race_day_id = #{id}
+             AND country = #{country}
+             AND created_at < (race_start_at - INTERVAL '#{interval} MINUTES')
+             ORDER BY runner_id, market_type, created_at DESC;"
+
+            results = Simulation.connection.select_all(sql).inject({}) do |res, row|
+              res[row['runner_id']] ||= {}
+              res[row['runner_id']][row['market_type']] = [row['value'], row['won']]
+              res
+            end
+
+            HyperSimulation::FULL_RANGES.each do |range_min, range_max|
+              Simulation.new(
                 race_day_id: id,
                 country: country,
                 interval: interval,
                 market_type: market_type,
                 rule: rule,
-                range_min: min_range,
-                range_max: max_range
-              )
+                results: results,
+                range_min: range_min,
+                range_max: range_max
+              ).simulate_and_insert!
             end
           end
         end

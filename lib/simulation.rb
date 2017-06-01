@@ -1,25 +1,12 @@
 class Simulation < ActiveRecord::Base
   belongs_to :race_day
 
-  validates_uniqueness_of :race_day_id, scope: [:interval, :range_min, :range_max, :market_type, :country, :rule]
-
-  before_create :simulate
+  attr_accessor :results
 
   def simulate
     selections = []
 
-    sql = "SELECT DISTINCT ON (runner_id, market_type) runner_id, value, won, market_type
-     FROM odds
-     WHERE race_day_id = #{race_day_id}
-     AND country = #{country}
-     AND created_at < (race_start_at - INTERVAL '#{interval} MINUTES')
-     ORDER BY runner_id, market_type, created_at DESC;"
-
-    Simulation.connection.select_all(sql).inject({}) do |res, row|
-      res[row['runner_id']] ||= {}
-      res[row['runner_id']][row['market_type']] = [row['value'], row['won']]
-      res
-    end.each do |runner_id, values|
+    @results.each do |runner_id, values|
       b, l, p = values[1].try(:first), values[2].try(:first), values[3].try(:first)
       next unless b and l
       next unless (range_min..range_max).include?(b)
@@ -46,5 +33,10 @@ class Simulation < ActiveRecord::Base
 
     self.hit_rate = (self.winners.to_f / self.total * 100).round(2)
     self.hit_rate = 0 if self.hit_rate.nan?
+  end
+
+  def simulate_and_insert!
+    simulate
+    self.class.connection.execute("INSERT INTO simulations (race_day_id, interval, range_min, range_max, market_type, country, rule, created_at, total, winners, best_price, return, profit, hit_rate) VALUES (#{race_day_id}, #{interval}, #{range_min}, #{range_max}, #{market_type}, #{country}, '#{rule}', '#{Time.now.to_s(:db)}', #{total}, #{winners}, #{best_price}, #{self.return}, #{profit}, #{hit_rate});")
   end
 end
