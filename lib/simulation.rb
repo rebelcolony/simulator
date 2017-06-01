@@ -3,9 +3,9 @@ class Simulation < ActiveRecord::Base
 
   validates_uniqueness_of :race_day_id, scope: [:interval, :range_min, :range_max, :market_type, :country, :rule]
 
-  after_create :simulate!
+  before_create :simulate
 
-  def simulate!
+  def simulate
     selections = []
 
     sql = "SELECT DISTINCT ON (runner_id, market_type) runner_id, value, won, market_type
@@ -46,7 +46,5 @@ class Simulation < ActiveRecord::Base
 
     self.hit_rate = (self.winners.to_f / self.total * 100).round(2)
     self.hit_rate = 0 if self.hit_rate.nan?
-
-    save
   end
 end
