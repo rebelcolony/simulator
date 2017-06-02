@@ -51,7 +51,6 @@ class HyperSimulation < ActiveRecord::Base
 
     out :hyper, "Found #{@races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - @races.count})"
 
-    # Find the best range and interval for
     res = get_results(FULL_RANGES, 0.5)
 
     self.results = res
@@ -114,10 +113,10 @@ class HyperSimulation < ActiveRecord::Base
     out :hyper, "For interval #{range_step} STEP: Best POINTS #{result[:points][:interval]}/#{result[:points][:range].inspect} (#{maxed.return})"
 
     # STRIKE RATE
-    maxed = get_max(:strike, :hit_rate)
-    result[:strike] = {interval: maxed.interval, range: maxed.range}
+    maxed = get_max(:strike_rate, :hit_rate)
+    result[:strike_rate] = {interval: maxed.interval, range: maxed.range}
 
-    out :hyper, "For interval #{range_step} STEP: Best STRIKE #{result[:strike][:interval]}/#{result[:strike][:range].inspect} (#{maxed.return})"
+    out :hyper, "For interval #{range_step} STEP: Best STRIKE #{result[:strike_rate][:interval]}/#{result[:strike_rate][:range].inspect} (#{maxed.strike_rate}%)"
 
     result
   end
