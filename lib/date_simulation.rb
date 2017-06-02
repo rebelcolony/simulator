@@ -9,6 +9,7 @@ class DateSimulation
     @range_min = options[:range_min]
     @range_max = options[:range_max]
     @rule = options[:rule]
+    @races = options[:races]
     @country = options[:country]
     @market_type = options[:market_type]
   end
@@ -16,18 +17,10 @@ class DateSimulation
   def simulate!
     simulations = []
 
-    races = (@since..@up_to).inject([]) do |res, date|
-      race = RaceDay.find_by_id(RaceDay.race_day_hash[date.to_s])
-      next unless race
-      race.cache_simulations!
-      res << race.id
-      res
-    end
-
     results = Simulation.connection.select_all("
       SELECT SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit
       FROM simulations
-      WHERE race_day_id IN (#{races.join(', ')})
+      WHERE race_day_id IN (#{@races.join(', ')})
       AND interval = #{@interval}
       AND range_min = #{@range_min}
       AND range_max = #{@range_max}

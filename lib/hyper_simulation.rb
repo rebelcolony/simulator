@@ -24,72 +24,54 @@ class HyperSimulation < ActiveRecord::Base
 
     i = 0
 
-    ranges = if true#options['full'] == '1'
-      FULL_RANGES
-    elsif false#options['mini'] == '1'
-      [
-        [1.6, 2.2], [1.6, 2.4], [1.6, 2.6], [1.6, 2.8], [1.6, 3.0], [1.6, 3.2], [1.6, 3.4],
-        [1.6, 3.6], [1.6, 3.8], [1.6, 4.0], [1.6, 4.2], [1.6, 4.4], [1.6, 4.6], [1.6, 5.0],
+    out :hyper, "Preparing for HyperSimulation:"
+    out :hyper, "FROM #{since} TO #{up_to}"
+    out :hyper, "FULL RANGE #{range_min}..#{range_max} STEP #{range_step}"
+    out :hyper, "INTERVAL #{interval_min}..#{interval_max}"
+    out :hyper, "#{rule.upcase} rule - #{Venue::COUNTRY_IDS[country].upcase} - #{MarketType.find(market_type)[:internal].upcase}"
+    out :hyper, "METRICS: #{metrics.map(&:upcase).join(', ')}"
 
-        [1.8, 2.2], [1.8, 2.4], [1.8, 2.6], [1.8, 2.8], [1.8, 3.0], [1.8, 3.2], [1.8, 3.4],
-        [1.8, 3.6], [1.8, 3.8], [1.8, 4.0], [1.8, 4.2], [1.8, 4.4], [1.8, 4.6], [1.8, 5.0],
+    out :hyper, "Looking for valid race days from #{since} TO #{up_to}"
 
-        [2.0, 2.2], [2.0, 2.4], [2.0, 2.6], [2.0, 2.8], [2.0, 3.0], [2.0, 3.2], [2.0, 3.4],
-        [2.0, 3.6], [2.0, 3.8], [2.0, 4.0], [2.0, 4.2], [2.0, 4.4], [2.0, 4.6], [2.0, 5.0],
+    races = (since..up_to).inject([]) do |res, date|
+      race = RaceDay.find_by_id(RaceDay.race_day_hash[date.to_s])
+      if race
+        if !race.cached
+          out :hyper, "Cannot use RaceDay #{race.id} (#{race.date}), it isn't cached"
+          next res
+        end
 
-        [2.2, 2.4], [2.2, 2.6], [2.2, 2.8], [2.2, 3.0], [2.2, 3.2], [2.2, 3.4], [2.2, 3.6],
-        [2.2, 3.8], [2.2, 4.0], [2.2, 4.2], [2.2, 4.4], [2.2, 4.6], [2.2, 4.8], [2.2, 5.0],
+        if !race.imported
+          out :hyper, "Cannot use RaceDay #{race.id} (#{race.date}), it isn't imported"
+          next res
+        end
 
-        [2.4, 2.6], [2.4, 2.8], [2.4, 3.0], [2.4, 3.2], [2.4, 3.4], [2.4, 3.6], [2.4, 3.8],
-        [2.4, 4.0], [2.4, 4.2], [2.4, 4.4], [2.4, 4.6], [2.4, 4.8], [2.4, 5.0],
-
-        [2.6, 2.8], [2.6, 3.0], [2.6, 3.2], [2.6, 3.4], [2.6, 3.6], [2.6, 3.8], [2.6, 4.0],
-        [2.6, 4.2], [2.6, 4.4], [2.6, 4.6], [2.6, 4.8], [2.6, 5.0],
-
-        [2.8, 3.0], [2.8, 3.2], [2.8, 3.4], [2.8, 3.6], [2.8, 3.8], [2.8, 4.0], [2.8, 4.2],
-        [2.8, 4.4], [2.8, 4.6], [2.8, 4.8], [2.8, 5.0],
-
-        [3.0, 3.2], [3.0, 3.4], [3.0, 3.6], [3.0, 3.8], [3.0, 4.0], [3.0, 4.2], [3.0, 4.4],
-        [3.0, 4.6], [3.0, 4.8], [3.0, 5.0],
-
-        [3.2, 3.4], [3.2, 3.6], [3.2, 3.8], [3.2, 4.0], [3.2, 4.2], [3.2, 4.4],
-        [3.2, 4.6], [3.2, 4.8], [3.2, 5.0],
-
-        [3.4, 3.6], [3.4, 3.8], [3.4, 4.0], [3.4, 4.2], [3.4, 4.4], [3.4, 4.6], [3.4, 4.8], [3.4, 5.0],
-
-        [3.6, 3.8], [3.6, 4.0], [3.6, 4.2], [3.6, 4.4], [3.6, 4.6], [3.6, 4.8], [3.6, 5.0],
-
-        [3.8, 4.0], [3.8, 4.2], [3.8, 4.4], [3.8, 4.6], [3.8, 4.8], [3.8, 5.0],
-
-        [4.0, 4.2], [4.0, 4.4], [4.0, 4.6], [4.0, 4.8], [4.0, 5.0],
-
-        [4.2, 4.4], [4.2, 4.6], [4.2, 4.8], [4.2, 5.0],
-
-        [4.4, 4.6], [4.4, 4.8], [4.4, 5.0],
-
-        [4.6, 4.8], [4.6, 5.0],
-
-        [4.8, 5.0]
-      ]
-    else
-      [[range_min, range_max], [range_min+1, range_max+1]]
+        res << race.id
+        res
+      else
+        out :hyper, "Cannot find RaceDay with date #{date}"
+        next res
+      end
     end
 
-    ranges.each do |min_range, max_range|
+    out :hyper, "Found #{races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - races.count})"
+
+    FULL_RANGES.each do |min_range, max_range|
+      out :hyper, "#{(((i += 1) / FULL_RANGES.size.to_f) * 100).to_i}% - RANGE #{min_range}..#{max_range}"
+
       steps_results = steps.map do |interval|
-        simulation = DateSimulation.new(
+
+        DateSimulation.new(
           since: since,
           up_to: up_to,
           interval: interval,
           range_min: min_range,
           range_max: max_range,
           rule: rule,
+          races: races,
           country: country,
           market_type: market_type
         ).simulate!
-
-        out :hyper, "PROGRESS: #{(((i += 1) / (steps.size.to_f * ranges.size)) * 100).to_i}%"
-        simulation
       end
 
       result = {}
@@ -122,8 +104,9 @@ class HyperSimulation < ActiveRecord::Base
       self.results[[min_range, max_range]] = result
     end
 
+    out :hyper, "SUCCESS - Finished HyperSimulation"
+
     save
-    # raise results.inspect
     # max = results.first
 
     # res = CSV.generate do |csv|

@@ -43,7 +43,7 @@ class RaceDay < ActiveRecord::Base
     countries = [0, 1, 2, 3]
     out :simulations, "Eligible COUNTRIES: #{countries.collect { |c| Venue::COUNTRY_IDS[c].upcase }.join(', ')}"
 
-    step = 0.01
+    step = 0.1
     intervals = (-0.3..4.5).step(step).map { |a| a.round(2) }.to_a
     out :simulations, "Eligible INTERVALS: #{intervals.first} TO #{intervals.last} STEP #{step}"
 
@@ -110,7 +110,7 @@ class RaceDay < ActiveRecord::Base
     self.class.connection.execute("DELETE FROM odds WHERE race_day_id = #{id}")
 
     total_passes = markets.count
-    out :simulations, "Total Loops: #{total_passes}"
+    out :import, "Total Loops: #{total_passes}"
 
     i = 0
 
