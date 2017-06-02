@@ -111,9 +111,9 @@ class RaceDay < ActiveRecord::Base
 
     races.each do |race|
       runners = race.runners.reject(&:removed).collect(&:id)
+      out :import, "#{((i / total_passes.to_f) * 100).round}% - #{race.venue.name} #{race.start_at.strftime("%H:%M")}"
 
       race.markets.each do |market|
-        out :import, "#{((i / total_passes.to_f) * 100).round}% - #{race.venue.name} #{race.start_at.strftime("%H:%M")} #{MarketType.find(market.market_type_id)[:internal]}"
         i += 1
 
         ids = OddSet.connection.select_values("SELECT id FROM odd_sets WHERE market_id = #{market.id}")
@@ -124,7 +124,7 @@ class RaceDay < ActiveRecord::Base
           os.values.each do |runner_id, val|
             next unless runners.include?(runner_id)
             v = val[:best] || val[2]
-            Odd.connection.execute("INSERT INTO odds (runner_id, value, market_type, created_at, race_day_id, race_start_at, won, country) VALUES (#{runner_id},#{v},#{market.market_type_id},'#{os.created_at.to_s(:db)}',#{id},'#{race.start_at.to_s(:db)}', '#{market.winners.include?(runner_id) ? 't' : 'f'}','#{race.venue.country_id}');")
+            Odd.connection.execute("INSERT INTO odds (runner_id, value, market_type, created_at, race_day_id, race_start_at, won, country) VALUES (#{runner_id},#{v},#{market.market_type_id},'#{os.created_at.to_s(:db)}',#{self.id},'#{race.start_at.to_s(:db)}', '#{market.winners.include?(runner_id) ? 't' : 'f'}','#{race.venue.country_id}');")
           end
         end
       end
