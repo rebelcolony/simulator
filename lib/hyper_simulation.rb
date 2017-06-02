@@ -3,9 +3,6 @@ class HyperSimulation < ActiveRecord::Base
 
   serialize :results, Hash
 
-  FIRST_STEP = 0.1
-  SECOND_STEP = 0.01
-
   FULL_RANGES = [
     1..6, 1..7, 1..8, 1..9, 1..10, 1..11,  1..12,  1..14,  1..16,  1..18,  1..20,
     2..6, 2..7, 2..8, 2..9, 2..10, 2..11,  2..12,  2..14,  2..16,  2..18,  2..20,
@@ -53,89 +50,85 @@ class HyperSimulation < ActiveRecord::Base
 
     out :hyper, "Found #{@races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - @races.count})"
 
-    # Get first results (broad strokes)
-    first_result = get_results(interval_min..interval_max, FIRST_STEP)
-
-    # Second pass
-    steps = (first_result[:hit_rate][0] - FIRST_STEP).round(2)..(first_result[:hit_rate][0] + FIRST_STEP).round(2)
-    self.results[:hit_rate] = get_results(steps, SECOND_STEP, [:hit_rate], [first_result[:hit_rate][1]])
-
-    steps = (first_result[:points][0] - FIRST_STEP).round(2)..(first_result[:points][0] + FIRST_STEP).round(2)
-    self.results[:points] = get_results(steps, SECOND_STEP, [:points], [first_result[:points][1]])
-
-    steps = (first_result[:strike_rate][0] - FIRST_STEP).round(2)..(first_result[:strike_rate][0] + FIRST_STEP).round(2)
-    self.results[:strike_rate] = get_results(steps, SECOND_STEP, [:strike_rate], [first_result[:strike_rate][1]])
+    self.results = get_results
 
     out :hyper, "SUCCESS - Finished HyperSimulation"
 
     save
   end
 
-  def get_results(steps, step, metrics = [:hit_rate, :points, :strike_rate], ranges = FULL_RANGES)
+  def get_results
     i = 0
     @simulations = []
 
-    steps_array = steps.step(step).map { |a| a.round(2) }.to_a
+    FULL_RANGES.each do |range|
+      out :hyper, "#{(((i += 1) / FULL_RANGES.size.to_f) * 100).to_i}% - #{metrics.map {|m| m.to_s.upcase.split('_').first }.join('/')} - RANGE #{range.inspect}"
 
-    steps_array.map do |interval|
+      results = Simulation.connection.select_all("
+        SELECT interval, SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit, ROUND((COUNT(profit >= 0) * 100)::numeric / COUNT(*), 2) AS strike_rate
+        FROM simulations
+        WHERE race_day_id IN (#{@races.join(', ')})
+        AND range_min = #{range.min}
+        AND range_max = #{range.max}
+        AND rule = '#{rule}'
+        AND country = #{country}
+        AND market_type = #{market_type}
+        GROUP BY interval
+        ORDER BY interval
+      ")
 
-      out :hyper, "#{(((i += 1) / steps_array.size.to_f) * 100).to_i}% - #{metrics.map {|m| m.to_s.upcase.split('_').first }.join('/')} - INTERVAL #{interval.inspect}"
-
-      ranges.each do |range|
-        @simulations << DateSimulation.new(
-          since: since,
-          up_to: up_to,
-          interval: interval,
+      results.each do |result|
+        simu = {
+          interval: result['interval'],
           range: range,
           rule: rule,
-          races: @races,
           country: country,
           market_type: market_type,
-          metrics: metrics
-        ).simulate!
+          total: result['total'],
+          winners: result['winners'],
+          best_price: result['best_price'],
+          return: result['return'],
+          profit: result['profit'],
+          strike_rate: result['strike_rate']
+        }
+
+        simu[:hit_rate] = (simu[:winners].to_f / simu[:total] * 100).round(2)
+        simu[:hit_rate] = 0 if simu[:hit_rate].nan?
+
+        @simulations << simu
       end
     end
 
     result = {}
 
     # HIT RATE
-    if metrics.include?(:hit_rate)
-      maxed = get_max(:hit_rate, :return)
-      result[:hit_rate] = [maxed.interval, maxed.range]
-      out :hyper, "For interval #{step} STEP: Best HIT #{result[:hit_rate][0]}/#{result[:hit_rate][1].inspect} (#{maxed.hit_rate}%)}"
-    end
+    maxed = get_max(:hit_rate, :return)
+    result[:hit_rate] = [maxed[:interval], maxed[:range]]
+    out :hyper, "Best HIT #{result[:hit_rate][0]}/#{result[:hit_rate][1].inspect} (#{maxed[:hit_rate]}%)"
 
     # POINTS
-    if metrics.include?(:points)
-      maxed = get_max(:return, :hit_rate)
-      result[:points] = [maxed.interval, maxed.range]
-      out :hyper, "For interval #{step} STEP: Best POINTS #{result[:points][0]}/#{result[:points][1].inspect} (#{maxed.return})"
-    end
+    maxed = get_max(:return, :hit_rate)
+    result[:points] = [maxed[:interval], maxed[:range]]
+    out :hyper, "Best POINTS #{result[:points][0]}/#{result[:points][1].inspect} (#{maxed[:return]})"
 
     # STRIKE RATE
-    if metrics.include?(:strike_rate)
-      maxed = get_max(:strike_rate, :hit_rate)
-      result[:strike_rate] = [maxed.interval, maxed.range]
-      out :hyper, "For interval #{step} STEP: Best STRIKE #{result[:strike_rate][0]}/#{result[:strike_rate][1].inspect} (#{maxed.strike_rate}%)"
-    end
+    maxed = get_max(:strike_rate, :hit_rate)
+    result[:strike_rate] = [maxed[:interval], maxed[:range]]
+    out :hyper, "Best STRIKE #{result[:strike_rate][0]}/#{result[:strike_rate][1].inspect} (#{maxed[:strike_rate]}%)"
 
     result
   end
 
   def get_max(first_sort, second_sort)
-    begin
-    max_first = @simulations.collect(&first_sort).max
-  rescue
-    raise @simulations.inspect
-  end
-    maxed = @simulations.select { |a| a.send(first_sort) == max_first }
-    max_second = maxed.collect(&second_sort).max
+    max_first = @simulations.collect { |s| s[first_sort] }.max
+    maxed = @simulations.select { |a| a[first_sort] == max_first }
+    max_second = maxed.collect { |s| s[second_sort] }.max
 
     if maxed.size == 1
       maxed.first
     else
       @simulations.select do |a|
-        a.send(first_sort) == max_first and a.send(second_sort) == max_second
+        a[first_sort] == max_first and a[second_sort] == max_second
       end.first
     end
   end
