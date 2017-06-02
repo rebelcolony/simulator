@@ -43,7 +43,7 @@ class RaceDay < ActiveRecord::Base
     countries = [0, 1, 2, 3]
     out :simulations, "Eligible COUNTRIES: #{countries.collect { |c| Venue::COUNTRY_IDS[c].upcase }.join(', ')}"
 
-    step = 0.1
+    step = 0.01
     intervals = (-0.3..4.5).step(step).map { |a| a.round(2) }.to_a
     out :simulations, "Eligible INTERVALS: #{intervals.first} TO #{intervals.last} STEP #{step}"
 
