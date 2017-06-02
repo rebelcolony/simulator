@@ -31,32 +31,6 @@ ActiveRecord::Schema.define(version: 20170602031349) do
     t.string "odds_checker_ref", limit: 2
   end
 
-  create_table "date_simulations", force: :cascade do |t|
-    t.date "since", null: false
-    t.date "up_to", null: false
-    t.float "interval", null: false
-    t.float "range_min", null: false
-    t.float "range_max", null: false
-    t.integer "market_type", null: false
-    t.integer "country", null: false
-    t.string "rule", null: false
-    t.datetime "created_at", null: false
-    t.integer "total"
-    t.integer "winners"
-    t.float "best_price"
-    t.float "return"
-    t.float "profit"
-    t.float "hit_rate"
-    t.index ["country"], name: "index_date_simulations_on_country"
-    t.index ["interval"], name: "index_date_simulations_on_interval"
-    t.index ["market_type"], name: "index_date_simulations_on_market_type"
-    t.index ["range_max"], name: "index_date_simulations_on_range_max"
-    t.index ["range_min"], name: "index_date_simulations_on_range_min"
-    t.index ["rule"], name: "index_date_simulations_on_rule"
-    t.index ["since"], name: "index_date_simulations_on_since"
-    t.index ["up_to"], name: "index_date_simulations_on_up_to"
-  end
-
   create_table "delayed_jobs", id: :serial, force: :cascade do |t|
     t.integer "priority", default: 0, null: false
     t.integer "attempts", default: 0, null: false
@@ -181,7 +155,6 @@ ActiveRecord::Schema.define(version: 20170602031349) do
     t.integer "country", null: false
     t.string "rule", null: false
     t.datetime "created_at", null: false
-    t.text "selections"
     t.integer "total"
     t.integer "winners"
     t.float "best_price"
@@ -195,31 +168,6 @@ ActiveRecord::Schema.define(version: 20170602031349) do
     t.index ["range_max"], name: "index_simulations_on_range_max"
     t.index ["range_min"], name: "index_simulations_on_range_min"
     t.index ["rule"], name: "index_simulations_on_rule"
-  end
-
-  create_table "simulections", force: :cascade do |t|
-    t.integer "race_day_id"
-    t.float "interval"
-    t.float "range_min"
-    t.float "range_max"
-    t.integer "market_type"
-    t.integer "country"
-    t.integer "runner_id"
-    t.string "rule"
-    t.datetime "created_at"
-    t.boolean "won"
-    t.float "best_price"
-    t.float "lay"
-    t.float "return"
-    t.float "profit"
-    t.index ["country"], name: "index_simulections_on_country"
-    t.index ["interval"], name: "index_simulections_on_interval"
-    t.index ["market_type"], name: "index_simulections_on_market_type"
-    t.index ["race_day_id"], name: "index_simulections_on_race_day_id"
-    t.index ["range_max"], name: "index_simulections_on_range_max"
-    t.index ["range_min"], name: "index_simulections_on_range_min"
-    t.index ["rule"], name: "index_simulections_on_rule"
-    t.index ["runner_id"], name: "index_simulections_on_runner_id"
   end
 
   create_table "subscriptions", id: :serial, force: :cascade do |t|
