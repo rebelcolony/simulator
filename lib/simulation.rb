@@ -9,6 +9,7 @@ class Simulation < ActiveRecord::Base
     @results.each do |runner_id, values|
       b, l, p = values[1].try(:first), values[2].try(:first), values[3].try(:first)
       next unless b and l
+      next if market_type == 3 and p.nil?
       next unless (range_min..range_max).include?(b)
       next if rule == 'lay' and l > b
 

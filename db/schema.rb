@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170601002716) do
+ActiveRecord::Schema.define(version: 20170602031349) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -130,6 +130,7 @@ ActiveRecord::Schema.define(version: 20170601002716) do
   create_table "race_days", id: :serial, force: :cascade do |t|
     t.date "date", null: false
     t.boolean "cached", default: false
+    t.boolean "imported", default: false
   end
 
   create_table "races", id: :serial, force: :cascade do |t|
