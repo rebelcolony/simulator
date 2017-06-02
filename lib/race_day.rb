@@ -13,6 +13,11 @@ class RaceDay < ActiveRecord::Base
     end
   end
 
+  def self.create_import_jobs!
+    where(cached: false).each { |r| r.delay.cache_simulations! }
+    where(imported: false).each { |r| r.delay.import! }
+  end
+
   def cache_simulations!(force = false)
     out :simulations, "Caching simulations for #{date}"
 
@@ -130,7 +135,7 @@ class RaceDay < ActiveRecord::Base
       end
     end
 
-    out :import, "SUCCESS Imported #{odds.count} for #{date}"
+    out :import, "SUCCESS Imported #{odds.count} odds for #{date}"
 
     update(imported: true)
   end
