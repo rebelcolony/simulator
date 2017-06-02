@@ -4,9 +4,6 @@ class CreateHyperSimulations < ActiveRecord::Migration[5.1]
       t.integer  "country",       null: false
       t.date     "since",         null: false, default: Date.new(2016, 6, 12)
       t.date     "up_to",         null: false, default: -> { 'NOW()' }
-      t.integer  "range_min",     null: false, default: 1
-      t.integer  "range_max",     null: false, default: 20
-      t.float    "range_step",    null: false, default: 1.0
       t.float    "interval_min",  null: false, default: -0.3
       t.float    "interval_max",  null: false, default: 4.5
       t.integer  "market_type",   null: false, default: 1
