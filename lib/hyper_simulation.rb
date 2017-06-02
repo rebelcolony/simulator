@@ -1,5 +1,5 @@
 class HyperSimulation < ActiveRecord::Base
-  validates_uniqueness_of :country, scope: [:since, :up_to, :range_min, :range_max, :range_step, :interval_min, :interval_max, :market_type, :rule, :metrics]
+  validates_uniqueness_of :country, scope: [:since, :up_to, :range_min, :range_max, :range_step, :interval_min, :interval_max, :market_type, :rule]
 
   serialize :results, Hash
 
@@ -20,20 +20,15 @@ class HyperSimulation < ActiveRecord::Base
   def simulate!
     $start = Time.now
 
-    steps = (interval_min..interval_max).step(range_step).map { |a| a.round(2) }.to_a
-
-    i = 0
-
     out :hyper, "Preparing for HyperSimulation:"
     out :hyper, "FROM #{since} TO #{up_to}"
     out :hyper, "FULL RANGE #{range_min}..#{range_max} STEP #{range_step}"
     out :hyper, "INTERVAL #{interval_min}..#{interval_max}"
     out :hyper, "#{rule.upcase} rule - #{Venue::COUNTRY_IDS[country].upcase} - #{MarketType.find(market_type)[:internal].upcase}"
-    out :hyper, "METRICS: #{metrics.map(&:upcase).join(', ')}"
 
     out :hyper, "Looking for valid race days from #{since} TO #{up_to}"
 
-    races = (since..up_to).inject([]) do |res, date|
+    @races = (since..up_to).inject([]) do |res, date|
       race = RaceDay.find_by_id(RaceDay.race_day_hash[date.to_s])
       if race
         if !race.cached
@@ -54,56 +49,12 @@ class HyperSimulation < ActiveRecord::Base
       end
     end
 
-    out :hyper, "Found #{races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - races.count})"
+    out :hyper, "Found #{@races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - @races.count})"
 
-    FULL_RANGES.each do |min_range, max_range|
-      out :hyper, "#{(((i += 1) / FULL_RANGES.size.to_f) * 100).to_i}% - RANGE #{min_range}..#{max_range}"
+    # Find the best range and interval for
+    res = get_results(FULL_RANGES, 0.5)
 
-      steps_results = steps.map do |interval|
-
-        DateSimulation.new(
-          since: since,
-          up_to: up_to,
-          interval: interval,
-          range_min: min_range,
-          range_max: max_range,
-          rule: rule,
-          races: races,
-          country: country,
-          market_type: market_type
-        ).simulate!
-      end
-
-      result = {}
-
-      if metrics.include?('daily_strike_rate')
-        max = steps_results.collect(&:hit_rate).max
-        maxed = steps_results.select { |a| a.hit_rate == max}
-
-        unless maxed.size == 1
-          max_return = maxed.collect(&:return).max
-
-          found = steps_results.index(steps_results
-            .select { |a| a.hit_rate == max}
-            .select { |a| a.return == max_return}.first)
-
-          steps_results[found].hit_rate += 1
-        end
-
-        result[:daily_strike_rate] = steps_results.collect(&:hit_rate)
-      end
-
-      if metrics.include?('points')
-        result[:points] = steps_results.collect(&:return)
-      end
-
-      if metrics.include?('hit_rate')
-        result[:hit_rate] = steps_results.collect(&:hit_rate)
-      end
-
-      self.results[[min_range, max_range]] = result
-    end
-
+    self.results = res
     out :hyper, "SUCCESS - Finished HyperSimulation"
 
     save
@@ -122,5 +73,76 @@ class HyperSimulation < ActiveRecord::Base
 
     # File.open(File.join(Rails.root.to_s.gsub("fast-odds", "selections").gsub("fastodds", "selections").gsub(/releases\/\d{14}/, 'current'), 'public', 'exports', "#{id}.csv"), 'w') { |file| file.write(res) }
 
+  end
+
+  def get_results(ranges, range_step)
+    steps = (interval_min..interval_max).step(range_step).map { |a| a.round(2) }.to_a
+
+    i = 0
+    simulations = []
+
+    ranges.each do |min_range, max_range|
+      out :hyper, "#{(((i += 1) / ranges.size.to_f) * 100).to_i}% - RANGE #{min_range}..#{max_range}"
+
+      steps.map do |interval|
+        simulations << DateSimulation.new(
+          since: since,
+          up_to: up_to,
+          interval: interval,
+          range_min: min_range,
+          range_max: max_range,
+          rule: rule,
+          races: @races,
+          country: country,
+          market_type: market_type
+        ).simulate!
+      end
+    end
+
+    result = {}
+
+    # STRIKE RATE
+    max_hit_rate = simulations.collect(&:hit_rate).max
+    maxed = simulations.select { |a| a.hit_rate == max_hit_rate }
+    max_return = maxed.collect(&:return).max
+
+    unless maxed.size == 1
+      found = simulations.index(
+        simulations
+        .select { |a| a.hit_rate == max_hit_rate and a.return == max_return}.first
+      )
+
+      maxed = [simulations[found]]
+    end
+
+    maxed = maxed.first
+
+    result[:daily_strike_rate] = {interval: maxed.interval, range: maxed.range}
+
+    out :hyper, "For interval #{range_step} STEP: Best STRIKE #{result[:daily_strike_rate][:interval]}/#{result[:daily_strike_rate][:range].inspect} (#{maxed.hit_rate})}"
+
+    # POINTS
+    max_return = simulations.collect(&:return).max
+    maxed = simulations.select { |a| a.return == max_return }
+    max_hit_rate = maxed.collect(&:hit_rate).max
+
+    unless maxed.size == 1
+      found = simulations.index(
+        simulations
+        .select { |a| a.return == max_return and a.hit_rate == max_hit_rate}.first
+      )
+
+      maxed = [simulations[found]]
+    end
+
+    maxed = maxed.first
+
+    result[:points] = {interval: maxed.interval, range: maxed.range}
+
+    out :hyper, "For interval #{range_step} STEP: Best POINTS #{result[:points][:interval]}/#{result[:points][:range].inspect} (#{maxed.return})"
+
+    # TODO: HIT RATE
+
+    result
   end
 end

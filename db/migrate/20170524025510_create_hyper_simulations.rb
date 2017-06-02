@@ -11,7 +11,6 @@ class CreateHyperSimulations < ActiveRecord::Migration[5.1]
       t.float    "interval_max",  null: false, default: 4.5
       t.integer  "market_type",   null: false, default: 1
       t.string   "rule",          null: false, default: 'lay'
-      t.string   "metrics",       null: false, default: ['points', 'hit_rate', 'daily_strike_rate'], array: true
       t.datetime "created_at",    null: false
       t.text     "results"
     end

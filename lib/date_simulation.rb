@@ -1,6 +1,6 @@
 class DateSimulation
 
-  attr_accessor :total, :winners, :best_price, :return, :hit_rate
+  attr_accessor :total, :winners, :best_price, :return, :hit_rate, :interval
 
   def initialize(options = {})
     @since = options[:since]
@@ -39,5 +39,9 @@ class DateSimulation
     @hit_rate = 0 if @hit_rate.nan?
 
     self
+  end
+
+  def range
+    @range_min..@range_max
   end
 end
