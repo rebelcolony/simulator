@@ -1,6 +1,6 @@
 class DateSimulation
 
-  attr_accessor :total, :winners, :best_price, :return, :hit_rate, :interval
+  attr_accessor :total, :winners, :best_price, :return, :hit_rate, :interval, :strike
 
   def initialize(options = {})
     @since = options[:since]
@@ -18,7 +18,7 @@ class DateSimulation
     simulations = []
 
     results = Simulation.connection.select_all("
-      SELECT SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit
+      SELECT SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit, COUNT(profit >= 0) AS strike
       FROM simulations
       WHERE race_day_id IN (#{@races.join(', ')})
       AND interval = #{@interval}
@@ -34,6 +34,7 @@ class DateSimulation
     @best_price = results['best_price']
     @return     = results['return']
     @profit     = results['profit']
+    @strike     = results['strike']
 
     @hit_rate = (@winners.to_f / @total * 100).round(2)
     @hit_rate = 0 if @hit_rate.nan?

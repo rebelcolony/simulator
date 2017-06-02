@@ -79,13 +79,13 @@ class HyperSimulation < ActiveRecord::Base
     steps = (interval_min..interval_max).step(range_step).map { |a| a.round(2) }.to_a
 
     i = 0
-    simulations = []
+    @simulations = []
 
     ranges.each do |min_range, max_range|
       out :hyper, "#{(((i += 1) / ranges.size.to_f) * 100).to_i}% - RANGE #{min_range}..#{max_range}"
 
       steps.map do |interval|
-        simulations << DateSimulation.new(
+        @simulations << DateSimulation.new(
           since: since,
           up_to: up_to,
           interval: interval,
@@ -101,48 +101,38 @@ class HyperSimulation < ActiveRecord::Base
 
     result = {}
 
-    # STRIKE RATE
-    max_hit_rate = simulations.collect(&:hit_rate).max
-    maxed = simulations.select { |a| a.hit_rate == max_hit_rate }
-    max_return = maxed.collect(&:return).max
+    # HIT RATE
+    maxed = get_max(:hit_rate, :return)
+    result[:hit_rate] = {interval: maxed.interval, range: maxed.range}
 
-    unless maxed.size == 1
-      found = simulations.index(
-        simulations
-        .select { |a| a.hit_rate == max_hit_rate and a.return == max_return}.first
-      )
-
-      maxed = [simulations[found]]
-    end
-
-    maxed = maxed.first
-
-    result[:daily_strike_rate] = {interval: maxed.interval, range: maxed.range}
-
-    out :hyper, "For interval #{range_step} STEP: Best STRIKE #{result[:daily_strike_rate][:interval]}/#{result[:daily_strike_rate][:range].inspect} (#{maxed.hit_rate})}"
+    out :hyper, "For interval #{range_step} STEP: Best HIT #{result[:hit_rate][:interval]}/#{result[:hit_rate][:range].inspect} (#{maxed.hit_rate}%)}"
 
     # POINTS
-    max_return = simulations.collect(&:return).max
-    maxed = simulations.select { |a| a.return == max_return }
-    max_hit_rate = maxed.collect(&:hit_rate).max
-
-    unless maxed.size == 1
-      found = simulations.index(
-        simulations
-        .select { |a| a.return == max_return and a.hit_rate == max_hit_rate}.first
-      )
-
-      maxed = [simulations[found]]
-    end
-
-    maxed = maxed.first
-
+    maxed = get_max(:return, :hit_rate)
     result[:points] = {interval: maxed.interval, range: maxed.range}
 
     out :hyper, "For interval #{range_step} STEP: Best POINTS #{result[:points][:interval]}/#{result[:points][:range].inspect} (#{maxed.return})"
 
-    # TODO: HIT RATE
+    # STRIKE RATE
+    maxed = get_max(:strike, :hit_rate)
+    result[:strike] = {interval: maxed.interval, range: maxed.range}
+
+    out :hyper, "For interval #{range_step} STEP: Best STRIKE #{result[:strike][:interval]}/#{result[:strike][:range].inspect} (#{maxed.return})"
 
     result
+  end
+
+  def get_max(first_sort, second_sort)
+    max_first = @simulations.collect(&first_sort).max
+    maxed = @simulations.select { |a| a.send(first_sort) == max_first }
+    max_second = maxed.collect(&second_sort).max
+
+    if maxed.size == 1
+      maxed.first
+    else
+      @simulations.select do |a|
+        a.send(first_sort) == max_first and a.send(second_sort) == max_second
+      end.first
+    end
   end
 end
