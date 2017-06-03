@@ -76,7 +76,7 @@ class RaceDay < ActiveRecord::Base
               res
             end
 
-            HyperSimulation::FULL_RANGES.each do |range_min, range_max|
+            HyperSimulation::FULL_RANGES.each do |range|
               Simulation.new(
                 race_day_id: id,
                 country: country,
@@ -84,8 +84,8 @@ class RaceDay < ActiveRecord::Base
                 market_type: market_type,
                 rule: rule,
                 results: results,
-                range_min: range_min,
-                range_max: range_max
+                range_min: range.min,
+                range_max: range.max
               ).simulate_and_insert!
             end
           end
