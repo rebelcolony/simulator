@@ -52,7 +52,9 @@ class HyperSimulation < ActiveRecord::Base
 
     base_sql = "
     SELECT interval, range_min, range_max,
-    ROUND(SUM(return)::numeric, 2) AS points,
+    SUM(winners) as winners,
+    SUM(total) as total,
+    ROUND(SUM(profit)::numeric, 2) AS points,
     ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END))::numeric, 2) AS hit_rate,
     ROUND((COUNT(CASE WHEN profit >= 0 THEN 1 END) * 100)::numeric / COUNT(*), 2) AS strike_rate
     FROM simulations
@@ -62,7 +64,7 @@ class HyperSimulation < ActiveRecord::Base
     {
       hit_rate: [:hit_rate, :points],
       points: [:points, :hit_rate],
-      strike_rate: [:strike_rate, :hit_rate]
+      strike_rate: [:strike_rate, :points]
     }.each do |meth, sorts|
 
       result = Simulation.connection.select_all(base_sql + "ORDER BY #{sorts[0]} DESC, #{sorts[1]} DESC LIMIT 1").first.to_h
@@ -70,7 +72,9 @@ class HyperSimulation < ActiveRecord::Base
       self.results[meth] = {
         interval: result['interval'],
         range: result['range_min']..result['range_max'],
-        value: result[meth.to_s].to_f
+        value: result[meth.to_s].to_f,
+        winners: result['winners'],
+        total: result['total']
       }
 
       out :hyper, "Best #{meth.upcase} formula: #{results[meth][:interval]}/#{results[meth][:range].inspect} (#{results[meth][:value]})"
