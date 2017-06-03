@@ -56,7 +56,7 @@ class HyperSimulation < ActiveRecord::Base
   range_max,
   SUM(return) AS points,
   ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END))::numeric, 2) AS hit_rate,
-  ROUND((COUNT(*) FILTER (WHERE profit >= 0) * 100)::numeric / COUNT(*), 2) AS strike_rate
+  ROUND((COUNT(CASE WHEN profit >= 0 THEN 1 END) * 100)::numeric / COUNT(*), 2) AS strike_rate
         FROM simulations
         WHERE race_day_id IN (319, 320, 321, 322, 325)
         AND rule = 'lay'
@@ -78,7 +78,7 @@ class HyperSimulation < ActiveRecord::Base
         value: result[meth.to_s].to_f
       }
 
-      out :hyper, "Best #{meth} formula: #{results[meth][:interval]}/#{results[meth][:range].inspect} (#{results[meth][:value]})"
+      out :hyper, "Best #{meth.upcase} formula: #{results[meth][:interval]}/#{results[meth][:range].inspect} (#{results[meth][:value]})"
     end
 
     save
