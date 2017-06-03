@@ -142,6 +142,6 @@ class RaceDay < ActiveRecord::Base
 
     update(imported: true)
 
-    delay.cache_simulations!
+    delay.cache_simulations!(force)
   end
 end
