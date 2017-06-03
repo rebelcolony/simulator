@@ -54,8 +54,8 @@ class HyperSimulation < ActiveRecord::Base
     SELECT interval, range_min, range_max,
     SUM(winners) as winners,
     SUM(total) as total,
-    ROUND(SUM(profit)::numeric, 2) AS points,
-    ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END))::numeric, 2) AS hit_rate,
+    ROUND(SUM(return)::numeric, 2) AS points,
+    ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END)::numeric), 2) AS hit_rate,
     ROUND((COUNT(CASE WHEN profit >= 0 THEN 1 END) * 100)::numeric / COUNT(*), 2) AS strike_rate
     FROM simulations
     WHERE race_day_id IN (#{@races.join(', ')}) AND rule = '#{rule}' AND market_type = #{market_type} AND country = #{country}
