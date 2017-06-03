@@ -51,18 +51,13 @@ class HyperSimulation < ActiveRecord::Base
     out :hyper, "Found #{@races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - @races.count})"
 
     base_sql = "
-    SELECT interval,
-  range_min,
-  range_max,
-  SUM(return) AS points,
-  ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END))::numeric, 2) AS hit_rate,
-  ROUND((COUNT(CASE WHEN profit >= 0 THEN 1 END) * 100)::numeric / COUNT(*), 2) AS strike_rate
-        FROM simulations
-        WHERE race_day_id IN (319, 320, 321, 322, 325)
-        AND rule = 'lay'
-        AND market_type = 3
-        AND country = 3
-        GROUP BY interval, range_min, range_max "
+    SELECT interval, range_min, range_max,
+    ROUND(SUM(return)::numeric, 2) AS points,
+    ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END))::numeric, 2) AS hit_rate,
+    ROUND((COUNT(CASE WHEN profit >= 0 THEN 1 END) * 100)::numeric / COUNT(*), 2) AS strike_rate
+    FROM simulations
+    WHERE race_day_id IN (#{@races.join(', ')}) AND rule = '#{rule}' AND market_type = #{market_type} AND country = #{country}
+    GROUP BY interval, range_min, range_max "
 
     {
       hit_rate: [:hit_rate, :points],
