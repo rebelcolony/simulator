@@ -3,6 +3,7 @@ lock "3.8.1"
 
 set :application, "simulator"
 set :repo_url, "git@github.com:rebelcolony/simulator.git"
+set :delayed_job_workers, 2
 
 # Default branch is :master
 # ask :branch, `git rev-parse --abbrev-ref HEAD`.chomp

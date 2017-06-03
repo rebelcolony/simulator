@@ -50,86 +50,37 @@ class HyperSimulation < ActiveRecord::Base
 
     out :hyper, "Found #{@races.count} valid race days from #{since} TO #{up_to} (missing #{(since..up_to).to_a.size - @races.count})"
 
-    self.results = get_results
+    base_sql = "
+    SELECT interval,
+  range_min,
+  range_max,
+  SUM(return) AS points,
+  ROUND((SUM(winners) * 100 / (CASE SUM(total) WHEN 0 THEN 1 ELSE SUM(total) END))::numeric, 2) AS hit_rate,
+  ROUND((COUNT(*) FILTER (WHERE profit >= 0) * 100)::numeric / COUNT(*), 2) AS strike_rate
+        FROM simulations
+        WHERE race_day_id IN (319, 320, 321, 322, 325)
+        AND rule = 'lay'
+        AND market_type = 3
+        AND country = 3
+        GROUP BY interval, range_min, range_max "
 
-    out :hyper, "SUCCESS - Finished HyperSimulation"
+    {
+      hit_rate: [:hit_rate, :points],
+      points: [:points, :hit_rate],
+      strike_rate: [:strike_rate, :hit_rate]
+    }.each do |meth, sorts|
+
+      result = Simulation.connection.select_all(base_sql + "ORDER BY #{sorts[0]} DESC, #{sorts[1]} DESC LIMIT 1").first.to_h
+
+      self.results[meth] = {
+        interval: result['interval'],
+        range: result['range_min']..result['range_max'],
+        value: result[meth.to_s].to_f
+      }
+
+      out :hyper, "Best #{meth} formula: #{results[meth][:interval]}/#{results[meth][:range].inspect} (#{results[meth][:value]})"
+    end
 
     save
-  end
-
-  def get_results
-    i = 0
-    @simulations = []
-
-    FULL_RANGES.each do |range|
-      out :hyper, "#{(((i += 1) / FULL_RANGES.size.to_f) * 100).to_i}% - RANGE #{range.inspect}"
-
-      results = Simulation.connection.select_all("
-        SELECT interval, SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit, ROUND((COUNT(profit >= 0) * 100)::numeric / COUNT(*), 2) AS strike_rate
-        FROM simulations
-        WHERE race_day_id IN (#{@races.join(', ')})
-        AND range_min = #{range.min}
-        AND range_max = #{range.max}
-        AND rule = '#{rule}'
-        AND country = #{country}
-        AND market_type = #{market_type}
-        GROUP BY interval
-        ORDER BY interval
-      ")
-
-      results.each do |result|
-        simu = {
-          interval: result['interval'],
-          range: range,
-          rule: rule,
-          country: country,
-          market_type: market_type,
-          total: result['total'],
-          winners: result['winners'],
-          best_price: result['best_price'],
-          return: result['return'],
-          profit: result['profit'],
-          strike_rate: result['strike_rate']
-        }
-
-        simu[:hit_rate] = (simu[:winners].to_f / simu[:total] * 100).round(2)
-        simu[:hit_rate] = 0 if simu[:hit_rate].nan?
-
-        @simulations << simu
-      end
-    end
-
-    result = {}
-
-    # HIT RATE
-    maxed = get_max(:hit_rate, :return)
-    result[:hit_rate] = [maxed[:interval], maxed[:range]]
-    out :hyper, "Best HIT #{result[:hit_rate][0]}/#{result[:hit_rate][1].inspect} (#{maxed[:hit_rate]}%)"
-
-    # POINTS
-    maxed = get_max(:return, :hit_rate)
-    result[:points] = [maxed[:interval], maxed[:range]]
-    out :hyper, "Best POINTS #{result[:points][0]}/#{result[:points][1].inspect} (#{maxed[:return]})"
-
-    # STRIKE RATE
-    maxed = get_max(:strike_rate, :hit_rate)
-    result[:strike_rate] = [maxed[:interval], maxed[:range]]
-    out :hyper, "Best STRIKE #{result[:strike_rate][0]}/#{result[:strike_rate][1].inspect} (#{maxed[:strike_rate]}%)"
-
-    result
-  end
-
-  def get_max(first_sort, second_sort)
-    max_first = @simulations.collect { |s| s[first_sort] }.max
-    maxed = @simulations.select { |a| a[first_sort] == max_first }
-    max_second = maxed.collect { |s| s[second_sort] }.max
-
-    if maxed.size == 1
-      maxed.first
-    else
-      @simulations.select do |a|
-        a[first_sort] == max_first and a[second_sort] == max_second
-      end.first
-    end
   end
 end
