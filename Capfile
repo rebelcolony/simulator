@@ -3,6 +3,7 @@ require "capistrano/setup"
 
 # Include default deployment tasks
 require "capistrano/deploy"
+require 'capistrano/delayed_job'
 
 # Load the SCM plugin appropriate to your project:
 #
