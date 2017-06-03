@@ -13,8 +13,6 @@ module Simulator
   class Application < Rails::Application
     config.load_defaults 5.1
 
-    config.autoload_paths << Rails.root.join('lib')
-
     config.active_job.queue_adapter = :delayed_job
 
     config.middleware.delete "Rack::Sendfile"
@@ -49,6 +47,8 @@ module Simulator
     }
   end
 end
+
+Dir["lib/*.rb"].each {|file| require Rails.root.join(file) }
 
 $logger = Logger.new(File.join(Rails.root, 'log', 'simulator.log'))
 

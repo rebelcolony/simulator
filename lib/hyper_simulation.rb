@@ -62,7 +62,7 @@ class HyperSimulation < ActiveRecord::Base
     @simulations = []
 
     FULL_RANGES.each do |range|
-      out :hyper, "#{(((i += 1) / FULL_RANGES.size.to_f) * 100).to_i}% - #{metrics.map {|m| m.to_s.upcase.split('_').first }.join('/')} - RANGE #{range.inspect}"
+      out :hyper, "#{(((i += 1) / FULL_RANGES.size.to_f) * 100).to_i}% - RANGE #{range.inspect}"
 
       results = Simulation.connection.select_all("
         SELECT interval, SUM(total) AS total, SUM(winners) AS winners, SUM(best_price) AS best_price, SUM(return) AS return, SUM(profit) AS profit, ROUND((COUNT(profit >= 0) * 100)::numeric / COUNT(*), 2) AS strike_rate
